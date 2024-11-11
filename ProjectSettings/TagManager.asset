@@ -8,11 +8,13 @@ TagManager:
   - Punch
   - Sell
   - Buy
+  - Road
+  - PatrolPoint
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Road
   - Water
   - UI
   - 

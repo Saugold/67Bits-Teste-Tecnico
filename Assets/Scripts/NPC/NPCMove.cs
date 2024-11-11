@@ -1,15 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class NPCMove : MonoBehaviour
 {
     [Header("Patrol Settings")]
-    [SerializeField] private float patrolRadius = 10f;
     [SerializeField] private NavMeshAgent agent;
-    [SerializeField] private Vector3 targetPosition;
-
+    [SerializeField] private List<Transform> patrolPoints;
+    [SerializeField] private float waitTimeAtPoint = 2f;
+    private int currentPatrolIndex = 0;
     [Header("States")]
     public bool isWaiting = false;
     public bool isPathing = false;
@@ -30,13 +31,26 @@ public class NPCMove : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         isSleep = false;
+        isPathing = true;
     }
 
     void Start()
     {
-        if (isSleep == false)
+        if (patrolPoints.Count == 0)
         {
-            ChooseRandomDestination();  
+        
+            GameObject[] patrolObjects = GameObject.FindGameObjectsWithTag("PatrolPoint");
+            patrolPoints = patrolObjects.Select(go => go.transform).ToList();
+        }
+
+        if (patrolPoints.Count > 0)
+        {
+
+            agent.SetDestination(patrolPoints[currentPatrolIndex].position);
+        }
+        else
+        {
+            Debug.LogWarning("Nenhum ponto de patrulha encontrado!");
         }
     }
 
@@ -46,9 +60,9 @@ public class NPCMove : MonoBehaviour
         animator.SetBool("isWalking", isPathing);
         if (!isSleep && !isCarrying)
         {
-            if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance && !isWaiting && !isSleep && !isCarrying)
+            if (!isWaiting && agent.remainingDistance <= agent.stoppingDistance)
             {
-                StartCoroutine(WaitAndChooseNewDestination());
+                StartCoroutine(WaitAndMoveToNextPoint());
             }
 
         }
@@ -110,31 +124,33 @@ public class NPCMove : MonoBehaviour
         isCarrying = true;
     }
     // ---------PATRULHA--------------------------------------------------------------------------   
-    void ChooseRandomDestination()
-    {
-        if (agent.enabled)
-        {
-            isPathing = true;
-            Vector3 randomDirection = Random.insideUnitSphere * patrolRadius;
-            randomDirection += transform.position;
-
-            NavMeshHit navHit;
-
-            if (NavMesh.SamplePosition(randomDirection, out navHit, patrolRadius, NavMesh.AllAreas))
-            {
-                targetPosition = navHit.position;
-                agent.SetDestination(targetPosition);
-            }
-        }
-    }
-
-    IEnumerator WaitAndChooseNewDestination()
+    private IEnumerator WaitAndMoveToNextPoint()
     {
         isPathing = false;
         isWaiting = true;
-        float randomWaitTime = Random.Range(3f, 6f);
-        yield return new WaitForSeconds(randomWaitTime);
-        ChooseRandomDestination();
+        yield return new WaitForSeconds(waitTimeAtPoint);
+
+       
+        int randomIndex;
+        do
+        {
+            randomIndex = Random.Range(0, patrolPoints.Count);
+        } while (randomIndex == currentPatrolIndex); 
+
+        currentPatrolIndex = randomIndex;
+
+       
+        if (NavMesh.SamplePosition(patrolPoints[currentPatrolIndex].position, out NavMeshHit hit, 1.0f, NavMesh.AllAreas))
+        {
+            agent.SetDestination(patrolPoints[currentPatrolIndex].position);
+            isPathing = true;
+        }
+        else
+        {
+            Debug.LogWarning("O ponto de patrulha não está na NavMesh!");
+        }
+
         isWaiting = false;
     }
+
 }

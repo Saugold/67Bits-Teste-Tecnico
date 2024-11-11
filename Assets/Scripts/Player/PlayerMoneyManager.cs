@@ -39,10 +39,20 @@ public class PlayerMoneyManager : MonoBehaviour
             if (money >= StackManager.Instance.stackPrice)
             {
                 AudioManager.Instance.PlayBuySound();
-                RemoveMoney(StackManager.Instance.stackPrice);
-                PlayerMeshManager._instance.UpdateColor();
-                StackManager.Instance.AddNpcCapacity(1);
+                StartCoroutine(BuyItemsCoroutine());
             }
+        }
+    }
+
+    private IEnumerator BuyItemsCoroutine()
+    {
+        PlayerMeshManager._instance.UpdateColor();
+        while (money >= StackManager.Instance.stackPrice)
+        {
+            RemoveMoney(StackManager.Instance.stackPrice);
+            StackManager.Instance.AddNpcCapacity(1);
+
+            yield return null;
         }
     }
 
