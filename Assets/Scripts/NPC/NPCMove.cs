@@ -36,16 +36,17 @@ public class NPCMove : MonoBehaviour
 
     void Start()
     {
+        
         if (patrolPoints.Count == 0)
         {
-        
+
             GameObject[] patrolObjects = GameObject.FindGameObjectsWithTag("PatrolPoint");
             patrolPoints = patrolObjects.Select(go => go.transform).ToList();
         }
 
         if (patrolPoints.Count > 0)
         {
-
+            isPathing = true;
             agent.SetDestination(patrolPoints[currentPatrolIndex].position);
         }
         else
@@ -58,17 +59,21 @@ public class NPCMove : MonoBehaviour
     {
 
         animator.SetBool("isWalking", isPathing);
-        if (!isSleep && !isCarrying)
+        if (agent.enabled)
         {
-            if (!isWaiting && agent.remainingDistance <= agent.stoppingDistance)
-            {
-                StartCoroutine(WaitAndMoveToNextPoint());
-            }
 
-        }
-        if(rb.velocity.magnitude < 0.1f)
-        {
-            isPathing = false;
+            if (!isSleep && !isCarrying)
+            {
+                if (!isWaiting && agent.remainingDistance <= agent.stoppingDistance)
+                {
+                    StartCoroutine(WaitAndMoveToNextPoint());
+                }
+
+            }
+            if (rb.velocity.magnitude < 0.1f)
+            {
+                isPathing = false;
+            }
         }
     }
 
@@ -130,16 +135,16 @@ public class NPCMove : MonoBehaviour
         isWaiting = true;
         yield return new WaitForSeconds(waitTimeAtPoint);
 
-       
+
         int randomIndex;
         do
         {
             randomIndex = Random.Range(0, patrolPoints.Count);
-        } while (randomIndex == currentPatrolIndex); 
+        } while (randomIndex == currentPatrolIndex);
 
         currentPatrolIndex = randomIndex;
 
-       
+
         if (NavMesh.SamplePosition(patrolPoints[currentPatrolIndex].position, out NavMeshHit hit, 1.0f, NavMesh.AllAreas))
         {
             agent.SetDestination(patrolPoints[currentPatrolIndex].position);
